@@ -1,6 +1,21 @@
 import socket
 import sys
 
+import struct
+import json
+
+def recv(sc):
+    length = sc.recv(4)
+    length = struct.unpack('i', length)
+    if length[0] > 0:
+        head = sc.recv(length[0]).decode('UTF-8')
+        head = json.loads(head)
+    else:
+        head = None
+    print ('recv header ', head)
+    
+    return head
+
 s = socket.socket()
 s.bind(("localhost",9999))
 s.listen(10) # Acepta hasta 10 conexiones entrantes.
@@ -8,38 +23,16 @@ s.listen(10) # Acepta hasta 10 conexiones entrantes.
 while True:
     sc, address = s.accept()
 
-    length = sc.recv(4)
-    print length
-    import struct
-    length = struct.unpack('i', length)
-    print length
-    head = sc.recv(length[0])
-    print head
-    import json
-    head = json.loads(head)
-    print head
-
-    # l = sc.recv(1024)
-    # while (l):
-    #     print('-\t'+l+'\n--')
-    #     l = sc.recv(1024)
-
-    sc.close()
+    head = recv(sc)
+    if head is not None:
+        # upload
+        f = open(head['name'],'wb') #open in binary
+        while True:
+            c = sc.recv(4096)
+            if len(c) == 0:
+                break
+            f.write(c)
+        sc.close()
+        f.close()
 
 s.close()
-
-# while True:
-#     sc, address = s.accept()
-
-#     print address
-#     f = open('file_'+".txt",'wb') #open in binary
-#     l = sc.recv(1024)
-#     print('.')
-#     while (l):
-#             f.write(l)
-#             l = sc.recv(1024)
-#     f.close()
-
-#     sc.close()
-
-# s.close()
